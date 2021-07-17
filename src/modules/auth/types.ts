@@ -1,7 +1,17 @@
 import { HttpStatus } from '@nestjs/common'
 
-export interface LoginResp {
-   data: {}
+export interface LoginResponse {
+   data?: {}
+   token?: string
    status: HttpStatus
-   errors?: []
+   error?: string
+   message?: string
+}
+
+export interface RegisterResponse {
+   data?: {}
+   token?: string
+   status: HttpStatus
+   error?: string
+   message?: string
 }

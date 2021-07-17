@@ -2,7 +2,7 @@ import { Body, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Todo } from './todo.entity'
-import { ITodo } from './todo.types'
+import { CompleteTodoUpdateResponse, ITodo } from './todo.types'
 
 @Injectable()
 export class TodoService {
@@ -33,7 +33,7 @@ export class TodoService {
       })
    }
 
-   public async completeTodo(id: number, body: any) {
+   public async completeTodo(id: number, body: CompleteTodoUpdateResponse) {
       await this.todoRepository.update({ id }, body).then((result) => {
          return result
       })

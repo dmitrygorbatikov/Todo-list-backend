@@ -1,25 +1,25 @@
-import { Body, Controller, Post, HttpStatus, Headers } from '@nestjs/common'
+import { Body, Controller, Headers, HttpStatus, Post } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { UserService } from '../user/user.service'
 import { RegisterDto } from './dto/register.dto'
-import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
+import { LoginDto } from './dto/login.dto'
+import { LoginResponse, RegisterResponse } from './types'
 
 @Controller('auth')
 export class AuthController {
    constructor(
       private authService: AuthService,
       private userService: UserService,
-      private jwtService: JwtService,
    ) {}
 
    @Post('/register')
-   public async register(@Body() body: RegisterDto) {
+   public async register(@Body() body: RegisterDto): Promise<RegisterResponse> {
       const user = await this.userService.getOneByEmail(body.email)
       if (user) {
          return {
-            message: 'user is exist',
-            status: 400,
+            error: 'User is exist',
+            status: HttpStatus.CONFLICT,
          }
       }
       const hashedPassword = await this.authService.passwordHash(body.password)
@@ -37,22 +37,25 @@ export class AuthController {
             minute: 'numeric',
          }),
       })
+      const token = this.authService.createToken(createdUser)
 
       return {
-         token: this.jwtService.sign({
-            username: body.name,
-            sub: createdUser.id,
-         }),
+         token,
+         status: HttpStatus.OK,
+         message: 'Registration completed successfully',
       }
    }
 
    @Post('/login')
-   public async login(@Headers() headers, @Body() body) {
+   public async login(
+      @Headers() headers,
+      @Body() body: LoginDto,
+   ): Promise<LoginResponse> {
       const user = await this.userService.getOneByEmail(body.email)
 
       if (!user) {
          return {
-            message: 'user not found',
+            error: 'User not found',
             status: HttpStatus.BAD_GATEWAY,
          }
       }
@@ -61,13 +64,15 @@ export class AuthController {
 
       if (!isMatch) {
          return {
-            message: 'incorrect email or password',
+            error: 'Incorrect email or password',
             status: HttpStatus.BAD_GATEWAY,
          }
       }
 
       return {
-         token: this.jwtService.sign({ username: body.name, sub: user.id }),
+         token: this.authService.createToken(user),
+         status: HttpStatus.OK,
+         message: 'Login completed successfully',
       }
    }
 }

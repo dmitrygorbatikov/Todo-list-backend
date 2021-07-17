@@ -28,7 +28,7 @@ export class UserService {
       return this.userRepository.find()
    }
 
-   public async deleteUserById(id) {
+   public async deleteUserById(id: number) {
       return this.userRepository.delete(id)
    }
 }

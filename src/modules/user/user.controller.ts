@@ -1,15 +1,6 @@
-import {
-   Body,
-   Controller,
-   Get,
-   Post,
-   Headers,
-   Delete,
-   HttpException,
-   HttpStatus,
-} from '@nestjs/common'
+import { Controller, Delete, Get, Headers, HttpStatus } from '@nestjs/common'
 import { UserService } from './user.service'
-import { IUser } from './user.types'
+import { GetAllUsersResponse, GetUserByIdResponse } from './user.types'
 import { JwtService } from '@nestjs/jwt'
 
 @Controller('user')
@@ -19,24 +10,31 @@ export class UserController {
       private jwtService: JwtService,
    ) {}
 
-   @Post()
-   public async create(@Body() body: IUser) {
-      const user = await this.userService.create(body)
-      return 'ok'
-   }
-
    @Get('/get-all')
-   public async getAllUsers() {
+   public async getAllUsers(): Promise<GetAllUsersResponse> {
       const users = await this.userService.getAllUsers()
-      return users
+      if (users.length == 0) {
+         return {
+            data: users,
+            status: HttpStatus.NO_CONTENT,
+            message: 'No one user found',
+         }
+      }
+      return {
+         data: users,
+         status: HttpStatus.OK,
+      }
    }
 
    @Get()
-   public async getUser(@Headers() headers) {
+   public async getUser(@Headers() headers): Promise<GetUserByIdResponse> {
       const token = headers.token
 
       if (!token) {
-         throw new HttpException('Нет авторизации', HttpStatus.UNAUTHORIZED)
+         return {
+            status: HttpStatus.UNAUTHORIZED,
+            error: 'Unauthorized',
+         }
       }
       const decode = this.jwtService.verify(token)
       const userId = decode.sub
@@ -44,14 +42,18 @@ export class UserController {
       const user = await this.userService.getOneById(userId)
 
       return {
-         name: user.name,
-         surname: user.surname,
-         email: user.email,
+         data: {
+            name: user.name,
+            surname: user.surname,
+            email: user.email,
+            registerDate: user.registerDate,
+         },
+         status: HttpStatus.OK,
       }
    }
 
-   @Delete()
-   public async deleteUserById() {
-      return await this.userService.deleteUserById(1)
-   }
+   // @Delete()
+   // public async deleteUserById() {
+   //    return await this.userService.deleteUserById(1)
+   // }
 }

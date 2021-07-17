@@ -4,33 +4,40 @@ import {
    Delete,
    Get,
    Headers,
-   Param,
-   HttpException,
    HttpStatus,
+   Param,
    Post,
    Put,
 } from '@nestjs/common'
 import { TodoService } from './todo.service'
-import { ITodo } from './todo.types'
+import {
+   CompleteTodoUpdateResponse,
+   CreateTodoResponse,
+   DeleteUserTodoResponse,
+   GetUserTodosResponse,
+   ITodo,
+   UpdateUserTodoResponse,
+} from './todo.types'
 import { JwtService } from '@nestjs/jwt'
-import { UserService } from '../user/user.service'
 
 @Controller('todo')
 export class TodoController {
    constructor(
       private todoService: TodoService,
       private jwtService: JwtService,
-      private userService: UserService,
    ) {}
 
    @Post()
-   public async create(@Headers() headers, @Body() body: ITodo) {
+   public async create(
+      @Headers() headers,
+      @Body() body: ITodo,
+   ): Promise<CreateTodoResponse> {
       const token = headers.token
 
       if (!token) {
          return {
-            message: 'Нет авторизации',
-            status: 401,
+            error: 'Unauthorized',
+            status: HttpStatus.UNAUTHORIZED,
          }
       }
       const decode = this.jwtService.verify(token)
@@ -40,6 +47,7 @@ export class TodoController {
          description: body.description,
          status: false,
          completedDate: ' ',
+
          date: new Date().toLocaleString('ru', {
             day: 'numeric',
             month: 'long',
@@ -49,17 +57,29 @@ export class TodoController {
          }),
          userId,
       })
-      return todo
+      return {
+         data: {
+            id: todo.id,
+            title: todo.title,
+            description: todo.description,
+            status: todo.status,
+            completedDate: todo.completedDate,
+            date: todo.date,
+         },
+         status: HttpStatus.OK,
+      }
    }
 
    @Get()
-   public async getUserTodos(@Headers() headers) {
+   public async getUserTodos(
+      @Headers() headers,
+   ): Promise<GetUserTodosResponse> {
       const token = headers.token
 
       if (!token) {
          return {
-            message: 'Нет авторизации',
-            status: 401,
+            error: 'Unauthorized',
+            status: HttpStatus.UNAUTHORIZED,
          }
       }
       const decode = this.jwtService.verify(token)
@@ -67,19 +87,29 @@ export class TodoController {
       const todos = await this.todoService.getUserTodos(userId)
 
       if (!todos) {
-         throw new HttpException('user do not have todo', HttpStatus.NO_CONTENT)
+         return {
+            data: [],
+            status: HttpStatus.NO_CONTENT,
+            error: 'Todos not found',
+         }
       }
 
-      return todos
+      return {
+         data: todos,
+         status: HttpStatus.OK,
+      }
    }
 
    @Delete('/:id')
-   public async deleteTodoById(@Param() params, @Headers() headers) {
+   public async deleteTodoById(
+      @Param() params,
+      @Headers() headers,
+   ): Promise<DeleteUserTodoResponse> {
       const token = headers.token
 
       if (!token) {
          return {
-            message: 'Нет авторизации',
+            error: 'Unauthorized',
             status: HttpStatus.UNAUTHORIZED,
          }
       }
@@ -90,24 +120,27 @@ export class TodoController {
       if (todo && todo[0]?.userId == userId) {
          await this.todoService.deleteTodo(params.id)
          return {
-            message: 'deleted',
+            message: 'Todo deleted',
             status: HttpStatus.OK,
          }
       } else {
          return {
-            message: 'todo not found',
+            error: 'Todo not found',
             status: HttpStatus.NOT_FOUND,
          }
       }
    }
 
    @Put('/:id')
-   public async updateTodo(@Body() body, @Param() params) {
+   public async updateTodo(
+      @Body() body,
+      @Param() params,
+   ): Promise<UpdateUserTodoResponse> {
       const todo = await this.todoService.updateTodo(params.id, body)
 
       return {
-         status: 200,
-         message: 'update',
+         status: HttpStatus.OK,
+         message: 'Updated',
       }
    }
 
@@ -119,8 +152,8 @@ export class TodoController {
    }
 
    @Put('/complete/:id')
-   public async completeTodo(@Param() params) {
-      const body = {
+   public async completeTodo(@Param() params): Promise<UpdateUserTodoResponse> {
+      const body: CompleteTodoUpdateResponse = {
          status: true,
          completedDate: new Date().toLocaleString('ru', {
             day: 'numeric',
@@ -130,17 +163,25 @@ export class TodoController {
             minute: 'numeric',
          }),
       }
-      const todo = await this.todoService.completeTodo(params.id, body)
-      return todo
+      await this.todoService.completeTodo(params.id, body)
+      return {
+         status: HttpStatus.OK,
+         message: 'Todo completed',
+      }
    }
 
    @Put('/uncomplete/:id')
-   public async uncompleteTodo(@Param() params) {
+   public async uncompleteTodo(
+      @Param() params,
+   ): Promise<UpdateUserTodoResponse> {
       const body = {
          status: false,
          completedDate: ' ',
       }
-      const todo = await this.todoService.completeTodo(params.id, body)
-      return todo
+      await this.todoService.completeTodo(params.id, body)
+      return {
+         status: HttpStatus.OK,
+         message: 'Todo completed',
+      }
    }
 }
