@@ -1,29 +1,42 @@
-import { Controller, Delete, Get, Headers, HttpStatus } from '@nestjs/common'
+import {
+   Body,
+   Controller,
+   Delete,
+   Get,
+   Headers,
+   HttpStatus,
+   Param,
+   Put,
+   Query,
+   UseGuards,
+} from '@nestjs/common'
 import { UserService } from './user.service'
-import { GetAllUsersResponse, GetUserByIdResponse } from './user.types'
+import {
+   BlockUserResponse,
+   GetUserByIdResponse,
+   IUser,
+   UnblockUserResponse,
+   UpdateUserDataResponse,
+} from './user.types'
 import { JwtService } from '@nestjs/jwt'
+import { Observable } from 'rxjs'
+import { TodoService } from '../todo/todo.service'
 
 @Controller('user')
 export class UserController {
    constructor(
       private userService: UserService,
+      private todoService: TodoService,
       private jwtService: JwtService,
    ) {}
 
    @Get('/get-all')
-   public async getAllUsers(): Promise<GetAllUsersResponse> {
-      const users = await this.userService.getAllUsers()
-      if (users.length == 0) {
-         return {
-            data: users,
-            status: HttpStatus.NO_CONTENT,
-            message: 'No one user found',
-         }
-      }
-      return {
-         data: users,
-         status: HttpStatus.OK,
-      }
+   public getAllUsers(
+      @Query('take') take: number = 1,
+      @Query('skip') skip: number = 1,
+   ): Observable<IUser[]> {
+      take = take > 20 ? 20 : take
+      return this.userService.getAllUsers(take, skip)
    }
 
    @Get()
@@ -47,13 +60,88 @@ export class UserController {
             surname: user.surname,
             email: user.email,
             registerDate: user.registerDate,
+            role: user.role,
+            isBlocked: user.isBlocked,
          },
          status: HttpStatus.OK,
       }
    }
 
-   // @Delete()
-   // public async deleteUserById() {
-   //    return await this.userService.deleteUserById(1)
-   // }
+   @Put('/:id')
+   // @UseGuards(AdminGuard)
+   public async updateUser(
+      @Body() body,
+      @Param() params,
+   ): Promise<UpdateUserDataResponse> {
+      const user = await this.userService.getOneById(params.id)
+      if (!user) {
+         return {
+            error: 'User not found',
+            status: HttpStatus.NOT_FOUND,
+         }
+      }
+      let data = {
+         name: body.name,
+         surname: body.surname,
+      }
+      await this.userService.updateUser(params.id, data)
+      return {
+         status: HttpStatus.OK,
+         message: 'updated',
+      }
+   }
+
+   @Get('/:id')
+   public async getUserById(@Param() params): Promise<GetUserByIdResponse> {
+      const user = await this.userService.getOneById(params.id)
+      if (!user) {
+         return {
+            status: HttpStatus.NOT_FOUND,
+            error: 'User not found',
+         }
+      }
+      return {
+         data: user,
+         status: HttpStatus.OK,
+      }
+   }
+
+   @Delete()
+   // @UseGuards(AdminGuard)
+   public async deleteUserAndTodos(@Query() query) {
+      await this.userService.deleteUser(query.id)
+      return {
+         status: HttpStatus.OK,
+         message: 'Deleted',
+      }
+   }
+
+   @Put('/block/:id')
+   // @UseGuards(AdminGuard)
+   public async blockUser(@Param() params): Promise<BlockUserResponse> {
+      const body = {
+         isBlocked: true,
+      }
+
+      await this.userService.blockUser(params.id, body)
+
+      return {
+         status: HttpStatus.OK,
+         message: 'User blocked',
+      }
+   }
+
+   @Put('/unblock/:id')
+   // @UseGuards(AdminGuard)
+   public async unblockUser(@Param() params): Promise<UnblockUserResponse> {
+      const body = {
+         isBlocked: false,
+      }
+
+      await this.userService.unblockUser(params.id, body)
+      return {
+         status: HttpStatus.OK,
+         message: 'User unblocked',
+      }
+   }
 }

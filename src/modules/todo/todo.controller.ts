@@ -8,24 +8,30 @@ import {
    Param,
    Post,
    Put,
+   Query,
 } from '@nestjs/common'
 import { TodoService } from './todo.service'
 import {
    CompleteTodoUpdateResponse,
    CreateTodoResponse,
    DeleteUserTodoResponse,
+   GenerateLink,
    GetUserTodosResponse,
    ITodo,
    UpdateUserTodoResponse,
 } from './todo.types'
 import { JwtService } from '@nestjs/jwt'
+import { UserService } from '../user/user.service'
 
 @Controller('todo')
 export class TodoController {
    constructor(
       private todoService: TodoService,
+      private userService: UserService,
       private jwtService: JwtService,
    ) {}
+
+   private baseUrl: string = 'http://localhost:3000'
 
    @Post()
    public async create(
@@ -103,21 +109,9 @@ export class TodoController {
    @Delete('/:id')
    public async deleteTodoById(
       @Param() params,
-      @Headers() headers,
    ): Promise<DeleteUserTodoResponse> {
-      const token = headers.token
-
-      if (!token) {
-         return {
-            error: 'Unauthorized',
-            status: HttpStatus.UNAUTHORIZED,
-         }
-      }
-      const decode = this.jwtService.verify(token)
-      const userId = decode.sub
-
       const todo = await this.todoService.getTodoById(params.id)
-      if (todo && todo[0]?.userId == userId) {
+      if (todo) {
          await this.todoService.deleteTodo(params.id)
          return {
             message: 'Todo deleted',
@@ -182,6 +176,53 @@ export class TodoController {
       return {
          status: HttpStatus.OK,
          message: 'Todo completed',
+      }
+   }
+
+   @Get('/generate-private-link')
+   public async createLink(@Query() query): Promise<GenerateLink> {
+      return this.todoService.createLinkToken(query.id).then((res) => {
+         console.log(res.token)
+         const link = `${this.baseUrl}/${res.token}`
+         return {
+            data: link,
+            status: HttpStatus.OK,
+         }
+      })
+   }
+   @Get('/get-by-id')
+   public async getTodoById(@Query() query) {
+      try {
+         const token = query.id
+         const decode = this.jwtService.verify(token)
+         const todo = await this.todoService.getTodoById(decode.todoId)
+         return {
+            data: todo,
+            status: HttpStatus.OK,
+         }
+      } catch (e) {
+         console.log(e)
+      }
+   }
+
+   @Get('/user')
+   public async getUserTodosById(
+      @Query() query,
+   ): Promise<GetUserTodosResponse> {
+      const userId = query.id
+      const todos = await this.todoService.getUserTodos(userId)
+
+      if (!todos) {
+         return {
+            data: [],
+            status: HttpStatus.NO_CONTENT,
+            error: 'Todos not found',
+         }
+      }
+
+      return {
+         data: todos,
+         status: HttpStatus.OK,
       }
    }
 }

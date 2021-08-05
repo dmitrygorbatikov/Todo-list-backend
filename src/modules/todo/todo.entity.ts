@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { User } from '../user/user.entity'
 
 @Entity({ name: 'todos' })
 export class Todo {
@@ -22,4 +23,7 @@ export class Todo {
 
    @Column()
    userId: number
+
+   @ManyToOne((type) => User, (user) => user.todos, { onDelete: 'CASCADE' })
+   user: User
 }

@@ -1,4 +1,10 @@
-import { IsEmail, IsNumber, IsString, MinLength } from 'class-validator'
+import {
+   IsBoolean,
+   IsEmail,
+   IsNumber,
+   IsString,
+   MinLength,
+} from 'class-validator'
 
 export class UserDto {
    @IsNumber()
@@ -18,4 +24,10 @@ export class UserDto {
 
    @IsString()
    registerDate: string
+
+   @IsString()
+   role: string
+
+   @IsBoolean()
+   isBlocked: boolean
 }

@@ -48,3 +48,9 @@ export interface CompleteTodoUpdateResponse {
    status: boolean
    completedDate: string
 }
+export interface GenerateLink {
+   data: string
+   status: HttpStatus
+   error?: string
+   message?: string
+}

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import * as bcrypt from 'bcryptjs'
 import { JwtService } from '@nestjs/jwt'
 import { UserDto } from '../user/dto/user.dto'
@@ -16,5 +16,16 @@ export class AuthService {
          username: user.name,
          sub: user.id,
       })
+   }
+
+   public decodeToken(token: string) {
+      if (!token) {
+         return {
+            error: 'Unauthorized',
+            status: HttpStatus.UNAUTHORIZED,
+         }
+      }
+      const decode = this.jwtService.verify(token)
+      return decode.sub
    }
 }

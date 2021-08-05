@@ -6,6 +6,8 @@ export interface IUser {
    email: string
    password: string
    registerDate: string
+   role: string
+   isBlocked: boolean
 }
 
 export interface IUserClient {
@@ -13,6 +15,8 @@ export interface IUserClient {
    surname: string
    email: string
    registerDate: string
+   role: string
+   isBlocked: boolean
 }
 
 export interface GetAllUsersResponse {
@@ -25,4 +29,28 @@ export interface GetUserByIdResponse {
    data?: IUserClient
    status: HttpStatus
    error?: string
+}
+
+export interface UpdateUserDataResponse {
+   status: HttpStatus
+   error?: string
+   message?: string
+}
+
+export interface GetUserByIdResponse {
+   data?: IUserClient
+   status: HttpStatus
+   error?: string
+}
+
+export interface BlockUserResponse {
+   status: HttpStatus
+   error?: string
+   message?: string
+}
+
+export interface UnblockUserResponse {
+   status: HttpStatus
+   error?: string
+   message?: string
 }

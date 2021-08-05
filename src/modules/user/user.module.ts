@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common'
 import { UserController } from './user.controller'
 import { UserSharedModule } from './user-shared.module'
-import { AuthModule } from '../auth/auth.module'
-import { AuthService } from '../auth/auth.service'
 import { JwtModule } from '@nestjs/jwt'
 import { jwtConstants } from '../../core/constants/constants'
+import { TodoSharedModule } from '../todo/todo-shared.module'
+import { AuthSharedModule } from '../auth/auth-shared.module'
 
 @Module({
    controllers: [UserController],
    imports: [
+      AuthSharedModule,
+      TodoSharedModule,
       UserSharedModule,
       JwtModule.register({
          secret: jwtConstants.secret,
