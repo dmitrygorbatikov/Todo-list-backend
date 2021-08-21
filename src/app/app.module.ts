@@ -8,6 +8,9 @@ import { TodoModule } from '../modules/todo/todo.module'
 import { Todo } from '../modules/todo/todo.entity'
 import { AuthModule } from '../modules/auth/auth.module'
 import { ConfigModule } from '@nestjs/config'
+import { MessageModule } from '../modules/message/message.module'
+import { Message } from '../modules/message/message.entity'
+import { SocketModule } from '../modules/socket/socket.module'
 
 @Module({
    imports: [
@@ -18,7 +21,7 @@ import { ConfigModule } from '@nestjs/config'
          username: 'root',
          password: '12345',
          database: 'todo',
-         entities: [User, Todo],
+         entities: [User, Todo, Message],
          synchronize: true,
       }),
       ConfigModule.forRoot({
@@ -27,6 +30,8 @@ import { ConfigModule } from '@nestjs/config'
       UserModule,
       TodoModule,
       AuthModule,
+      SocketModule,
+      MessageModule,
    ],
    controllers: [AppController],
    providers: [AppService],

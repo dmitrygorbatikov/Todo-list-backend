@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { User } from './user.entity'
 import { IUser } from './user.types'
+import { from, Observable } from 'rxjs'
 
 @Injectable()
 export class UserService {
@@ -12,8 +13,7 @@ export class UserService {
    ) {}
 
    public async create(user: IUser) {
-      const newUser = await this.userRepository.save(user)
-      return newUser
+      return await this.userRepository.save(user)
    }
 
    public async getOneByEmail(email: string) {
@@ -21,14 +21,32 @@ export class UserService {
    }
 
    public async getOneById(id: number) {
-      return this.userRepository.findOne({ id })
+      return await this.userRepository.findOne({ id })
    }
 
-   public async getAllUsers() {
-      return this.userRepository.find()
+   public getAllUsers(take: number = 10, skip: number = 0): Observable<User[]> {
+      return from(
+         this.userRepository.findAndCount({ take, skip }).then(([users]) => {
+            return <User[]>users
+         }),
+      )
    }
 
-   public async deleteUserById(id) {
-      return this.userRepository.delete(id)
+   public async updateUser(id: number, body) {
+      await this.userRepository.update({ id }, body).then((result) => {
+         return result
+      })
+   }
+
+   public async deleteUser(id: number) {
+      return await this.userRepository.delete({ id })
+   }
+
+   public async blockUser(id: number, body) {
+      return await this.userRepository.update({ id }, body)
+   }
+
+   public async unblockUser(id: number, body) {
+      return await this.userRepository.update({ id }, body)
    }
 }
